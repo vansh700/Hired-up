@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="index.css">
   <style>
-    body { }
+    body { color: var(--text-main); }
     .layout { display: flex; min-height: 100vh; }
     .left  { flex: 3; padding: 48px 56px; }
     .right { flex: 1; min-width: 300px; background: var(--bg-glass); padding: 40px;
@@ -22,14 +22,14 @@
       width: 88px; height: 88px; border-radius: 50%;
       background: linear-gradient(135deg, #6d5cff, #3c5bff);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.2rem; font-weight: 900;
+      font-size: 2.2rem; font-weight: 900; color: #fff;
       box-shadow: 0 0 30px rgba(109,92,255,0.35); border: 3px solid rgba(255,255,255,0.1);
       flex-shrink: 0;
     }
     .p-name { font-size: 2.2rem; font-weight: 800; letter-spacing: -1.5px;
-      background: linear-gradient(to bottom, #fff, #a2a7c7); -webkit-background-clip: text; background-clip: text;
+      background: var(--gradient-text); -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent; margin: 0; }
-    .p-email { color: #a2a7c7; font-size: 0.9rem; margin-top: 4px; }
+    .p-email { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
     .p-badge { display:inline-block; background:rgba(109,92,255,0.15); border:1px solid rgba(109,92,255,0.3);
       padding:4px 12px; border-radius:99px; font-size:0.72rem; font-weight:800; color:#8f85ff;
       text-transform:uppercase; letter-spacing:0.5px; margin-top:6px; }
@@ -39,85 +39,129 @@
     .act-btn { flex:1; padding:14px 18px; border-radius:99px; font-weight:700; font-size:0.9rem;
       display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
       transition:all 0.3s; text-decoration:none; border:none; }
-    .act-btn.primary { background:linear-gradient(90deg,#6d5cff,#9b4dff); color:#fff;
+    .act-btn.primary { background:linear-gradient(90deg,#6d5cff,#9b4dff); color:#fff !important;
       box-shadow:0 10px 25px rgba(109,92,255,0.3); }
-    .act-btn.outline { background:rgba(255,255,255,0.03); border:1px solid rgba(75,102,255,0.4); color:#fff; }
+    .act-btn.outline { background:var(--bg-glass); border:1px solid rgba(75,102,255,0.4); color:var(--text-main); }
     .act-btn.primary:hover { transform:translateY(-2px); box-shadow:0 15px 30px rgba(109,92,255,0.5); }
     .act-btn.outline:hover { background:rgba(75,102,255,0.1); border-color:#6d5cff; }
 
     /* STATS GRID */
     .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:32px; }
     @media(max-width:700px){ .stats-grid{grid-template-columns:repeat(2,1fr);} }
-    .stat-box { background:rgba(11,17,43,0.5); border:1px solid rgba(255,255,255,0.06);
+    .stat-box { background:var(--bg-card); border:1px solid var(--border-subtle);
       border-radius:18px; padding:22px; backdrop-filter:blur(10px); transition:all 0.3s; }
     .stat-box:hover { border-color:rgba(109,92,255,0.3); transform:translateY(-3px); }
-    .stat-box h4 { font-size:0.65rem; color:#a6aacf; letter-spacing:1.5px; font-weight:800;
+    .stat-box h4 { font-size:0.65rem; color:var(--text-muted); letter-spacing:1.5px; font-weight:800;
       text-transform:uppercase; margin:0 0 12px; }
     .stat-box .val { font-size:2rem; font-weight:800; letter-spacing:-0.5px; }
     .val.cyan { color:#38e6c5; } .val.blue { color:#60a5fa; } .val.purple { color:#a78bfa; }
 
     /* SKILLS SECTION */
     .section-title { font-size:1rem; font-weight:800; text-transform:uppercase; letter-spacing:1px;
-      color:#a6aacf; margin:28px 0 14px; }
+      color:var(--text-muted); margin:28px 0 14px; }
     .skills-display { display:flex; flex-wrap:wrap; gap:0.5rem; min-height:40px; }
+    .skill-tags-input { border:1px solid var(--border-subtle); background:var(--bg-card);
+      border-radius:12px; padding:10px 14px; display:flex; flex-wrap:wrap; gap:0.4rem; cursor:text; }
 
     /* ASSESSMENT HISTORY */
     .assessment-row {
       display:flex; justify-content:space-between; align-items:center;
-      padding:14px 18px; border-radius:12px; background:rgba(255,255,255,0.025);
-      border:1px solid rgba(255,255,255,0.05); margin-bottom:10px; transition:all 0.2s;
+      padding:14px 18px; border-radius:12px; background:var(--bg-glass);
+      border:1px solid var(--border-subtle); margin-bottom:10px; transition:all 0.2s;
     }
     .assessment-row:hover { border-color:rgba(109,92,255,0.25); background:rgba(109,92,255,0.04); }
 
     /* CERT ROWS */
     .cert-row { display:flex; justify-content:space-between; align-items:center;
-      padding:12px 16px; border-radius:10px; background:rgba(255,255,255,0.02);
-      border:1px solid rgba(255,255,255,0.05); margin-bottom:8px; }
+      padding:12px 16px; border-radius:10px; background:var(--bg-glass);
+      border:1px solid var(--border-subtle); margin-bottom:8px; }
 
     /* BUTTONS ROW */
     .main-btns { display:flex; gap:14px; margin-top:28px; }
     .btn-main { flex:1; padding:16px; border-radius:99px; font-weight:800; font-size:1rem;
       text-align:center; cursor:pointer; transition:all 0.3s; text-decoration:none;
       display:flex; align-items:center; justify-content:center; gap:10px; }
-    .btn-main.blue { background:linear-gradient(90deg,#6d5cff,#3c5bff); color:#fff; border:none;
+    .btn-main.blue { background:linear-gradient(90deg,#6d5cff,#3c5bff); color:#fff !important; border:none;
       box-shadow:0 12px 25px rgba(60,91,255,0.3); }
-    .btn-main.ghost { border:1px solid rgba(75,102,255,0.45); background:rgba(255,255,255,0.03); color:#fff; }
+    .btn-main.ghost { border:1px solid rgba(75,102,255,0.45); background:var(--bg-glass); color:var(--text-main); }
     .btn-main.blue:hover { transform:scale(1.02) translateY(-2px); }
-    .btn-main.ghost:hover { background:rgba(255,255,255,0.07); border-color:#6d5cff; }
+    .btn-main.ghost:hover { background:rgba(75,102,255,0.08); border-color:#6d5cff; }
 
     /* RIGHT PANEL */
-    .right label { display:block; margin-top:18px; font-size:0.7rem; color:#9aa3d3;
+    .right label { display:block; margin-top:18px; font-size:0.7rem; color:var(--text-muted);
       text-transform:uppercase; font-weight:800; letter-spacing:1px; margin-bottom:6px; }
+    .right h2 { color:var(--text-main); }
+    .right p { color:var(--text-muted) !important; }
     .right input, .right textarea {
-      width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(45,55,102,0.6);
-      background:rgba(10,15,44,0.5); color:#fff; font-size:0.9rem; outline:none;
+      width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border-subtle);
+      background:var(--bg-glass); color:var(--text-main); font-size:0.9rem; outline:none;
       transition:all 0.3s; font-family:inherit;
     }
     .right input:focus, .right textarea:focus {
-      border-color:#6d5cff; background:rgba(10,15,44,0.8); box-shadow:0 0 12px rgba(109,92,255,0.2);
+      border-color:#6d5cff; background:var(--bg-card); box-shadow:0 0 12px rgba(109,92,255,0.15);
     }
     .save-btn { width:100%; margin-top:24px; padding:16px; border:none; border-radius:99px;
-      background:linear-gradient(90deg,#6d5cff,#9b4dff); color:#fff; font-size:1rem;
+      background:linear-gradient(90deg,#6d5cff,#9b4dff); color:#fff !important; font-size:1rem;
       font-weight:800; cursor:pointer; box-shadow:0 12px 25px rgba(155,77,255,0.3);
       transition:all 0.3s; font-family:inherit; }
     .save-btn:hover { transform:translateY(-2px); box-shadow:0 18px 35px rgba(155,77,255,0.5); }
 
     /* NAV */
-    .p-nav { position:fixed; top:0; width:100%; background:rgba(11,14,20,0.85);
-      backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.07);
+    .p-nav { position:fixed; top:0; width:100%; background:var(--bg-glass);
+      backdrop-filter:blur(12px); border-bottom:1px solid var(--border-subtle);
       padding:14px 40px; display:flex; justify-content:space-between; align-items:center; z-index:100; }
-    .p-nav a { color:rgba(255,255,255,0.6); text-decoration:none; font-size:0.88rem; font-weight:600;
+    .p-nav a { color:var(--text-muted); text-decoration:none; font-size:0.88rem; font-weight:600;
       transition:all 0.2s; }
-    .p-nav a:hover { color:#fff; }
-    .p-nav a.active { color:#fff; }
+    .p-nav a:hover { color:var(--text-main); }
+    .p-nav a.active { color:var(--text-main); }
 
-    /* NEW PLATFORM FEATURES */
+    /* PLATFORM / METRIC CARDS */
     .metric-card {
-      background: rgba(11, 17, 43, 0.5); border: 1px solid rgba(255, 255, 255, 0.06);
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
       border-radius: 20px; padding: 1.5rem; transition: all 0.3s ease;
     }
     .metric-card:hover { border-color: #6d5cff; transform: translateY(-5px); }
-    
+
+    /* LIGHT MODE: force text inside metric cards to be readable */
+    :root[data-theme="light"] .metric-card [style*="color: #fff"],
+    :root[data-theme="light"] .metric-card [style*="color:#fff"],
+    :root[data-theme="light"] .metric-card [style*="color: #a2a7c7"],
+    :root[data-theme="light"] .metric-card [style*="color:#a2a7c7"] {
+      color: var(--text-main) !important;
+    }
+    :root[data-theme="light"] .metric-card [style*="color: #a2a7c7"],
+    :root[data-theme="light"] [style*="color: #a2a7c7"],
+    :root[data-theme="light"] [style*="color:#a2a7c7"] {
+      color: var(--text-muted) !important;
+    }
+    :root[data-theme="light"] .cert-row [style*="color:#fff"],
+    :root[data-theme="light"] .cert-row [style*="color: #fff"] {
+      color: var(--text-main) !important;
+    }
+    :root[data-theme="light"] [style*="background: rgba(11, 17, 43"],
+    :root[data-theme="light"] [style*="background: rgba(11,17,43"],
+    :root[data-theme="light"] [style*="background:rgba(11,17,43"],
+    :root[data-theme="light"] [style*="background: rgba(10, 15, 44"],
+    :root[data-theme="light"] [style*="background:rgba(10,15,44"] {
+      background: var(--bg-card) !important;
+    }
+    :root[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.08)"],
+    :root[data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255,0.08)"],
+    :root[data-theme="light"] [style*="border-bottom: 1px solid rgba(255,255,255,0.08)"] {
+      border-color: var(--border-subtle) !important;
+    }
+    :root[data-theme="light"] [style*="background: rgba(255,255,255,0.03)"] {
+      background: var(--bg-glass) !important;
+    }
+    :root[data-theme="light"] .p-nav button {
+      background: var(--bg-card) !important;
+      border-color: var(--border-subtle) !important;
+      color: var(--text-main) !important;
+    }
+    :root[data-theme="light"] #skill-hidden-input {
+      color: var(--text-main) !important;
+    }
+
     .custom-scroll::-webkit-scrollbar { height: 6px; }
     .custom-scroll::-webkit-scrollbar-track { background: transparent; }
     .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -127,6 +171,22 @@
     .hidden { display: none !important; }
     ::-webkit-scrollbar { width:5px; }
     ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:10px; }
+
+    /* DROP ZONE */
+    .drop-zone {
+      border: 2px dashed var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: var(--bg-glass);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #6d5cff;
+      background: rgba(109, 92, 255, 0.05);
+    }
+    .drop-zone p { color: var(--text-muted) !important; font-size: 0.85rem; margin: 0.25rem 0; }
   </style>
 </head>
 <body>
@@ -409,6 +469,24 @@
         <div style="padding:1.5rem;text-align:center;opacity:0.3;"><p>Loading certificates...</p></div>
       </div>
 
+      <!-- APTITUDE RESULTS -->
+      <div class="section-title" style="margin-top:28px;">Aptitude History</div>
+      <div id="aptitude-list">
+        <div style="padding:1.5rem;text-align:center;opacity:0.3;"><p>Loading aptitude results...</p></div>
+      </div>
+
+      <!-- INTERVIEW RESULTS -->
+      <div class="section-title" style="margin-top:28px;">AI Interview History</div>
+      <div id="interview-list">
+        <div style="padding:1.5rem;text-align:center;opacity:0.3;"><p>Loading interview history...</p></div>
+      </div>
+
+      <!-- LIVE CODING HISTORY -->
+      <div class="section-title" style="margin-top:28px;">Live Coding History</div>
+      <div id="livecoding-list">
+        <div style="padding:1.5rem;text-align:center;opacity:0.3;"><p>Loading coding submissions...</p></div>
+      </div>
+
     </div>
 
     <!-- RIGHT PANEL -->
@@ -487,7 +565,11 @@
     }
 
     async function loadAll() {
-      await Promise.allSettled([loadProfile(), loadAssessments(), loadCertificates(), loadSubmissions(), loadPerformance()]);
+      await Promise.allSettled([
+        loadProfile(), loadAssessments(), loadCertificates(),
+        loadSubmissions(), loadPerformance(), loadAptitudeResults(),
+        loadInterviewResults(), loadLiveCodingHistory()
+      ]);
     }
 
     let realStats = { testsCompleted: 0, avgAccuracy: 0, certsVerified: 0, codeSubmissions: 0 };
@@ -601,6 +683,7 @@
                       document.getElementById('lc-hard').textContent = lcData.hardSolved || 0;
                       document.getElementById('lc-hard-all').textContent = `/ ${lcData.totalHard || 0}`;
                       
+                      // Process Heatmap Data realistically
                       const cal = lcData.submissionCalendar || {};
                       let totalSubmissions = 0;
                       let activeDays = Object.keys(cal).length;
@@ -642,7 +725,7 @@
         const jobs = await res.json();
         if (!jobs.length) { container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No assessments taken yet.</p>'; return; }
 
-        let total = 0, totalScore = 0, count = 0;
+        let total = 0;
         container.innerHTML = jobs.filter(j => j.assessmentsTaken > 0).map(j => {
           total += j.assessmentsTaken;
           return `
@@ -669,21 +752,191 @@
         const res = await apiFetch(API, '/api/certificates');
         if (!res.ok) throw new Error();
         const certs = await res.json();
-        document.getElementById('stat-certs').textContent = certs.filter(c => c.status === 'VERIFIED').length;
-        if (!certs.length) { container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No certificates uploaded yet.</p>'; return; }
-        const statusColors = { VERIFIED:'#34d399', PENDING:'#fbbf24', FAILED:'#f87171', UNVERIFIABLE:'#94a3b8' };
-        container.innerHTML = certs.map(c => `
-          <div class="cert-row">
-            <div>
-              <div style="font-weight:700;font-size:0.9rem;text-transform:capitalize;">${c.platform}</div>
-              <div style="font-size:0.72rem;color:#a2a7c7;margin-top:2px;">${new Date(c.created_at).toLocaleDateString()}</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-weight:800;color:${statusColors[c.status]||'#94a3b8'};font-size:0.82rem;">${c.status}</div>
-              <div style="font-size:0.72rem;color:#64748b;">Trust: ${c.trust_score || 0}%</div>
-            </div>
-          </div>`).join('');
-      } catch { container.innerHTML = '<p style="opacity:0.3;font-size:0.85rem;">Could not load certificates.</p>'; }
+        
+        // Count verified certs for stats
+        const verifiedCount = certs.filter(c => c.status === 'VERIFIED' || c.status === 'VALID').length;
+        document.getElementById('stat-certs').textContent = verifiedCount;
+
+        if (!certs.length) {
+          container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No certificates issued or uploaded yet.</p>';
+          return;
+        }
+
+        const statusColors = { 
+          VERIFIED: '#34d399', VALID: '#34d399', 
+          PENDING: '#fbbf24', 
+          FAILED: '#f87171', 
+          REVOKED: '#f87171',
+          UNVERIFIABLE: '#94a3b8' 
+        };
+
+        container.innerHTML = certs.map(c => {
+          const isSystemIssued = c.platform === 'HiredUp' || c.hash_signature;
+          const status = c.status || 'PENDING';
+          const color = statusColors[status] || '#94a3b8';
+          
+          return `
+            <div class="cert-row" style="flex-direction:column; align-items:stretch; gap:12px; padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:800; font-size:0.95rem; color:#fff;">
+                    ${c.course_name || c.platform || 'Certificate'} 
+                    ${isSystemIssued ? '<span style="color:#6d5cff; font-size:0.7rem; vertical-align:middle; margin-left:4px;">VERIFIED AUTHORITY</span>' : ''}
+                  </div>
+                  <div style="font-size:0.72rem; color:#a2a7c7; margin-top:2px;">
+                    ${isSystemIssued ? 'Issued by HiredUp' : 'Uploaded Credential'} • ${new Date(c.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:900; color:${color}; font-size:0.8rem; letter-spacing:0.5px;">${status}</div>
+                  <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">Trust Score: ${c.trust_score || 0}%</div>
+                </div>
+              </div>
+              
+              <div style="display:flex; gap:8px;">
+                ${isSystemIssued ? `
+                  <a href="verify.html?id=${c._id}" class="skill-tag" style="background:rgba(109,92,255,0.1); border-color:rgba(109,92,255,0.3); color:#a5b4fc; cursor:pointer; text-decoration:none;">Verify Online</a>
+                  <a href="${API}${c.file_path}" target="_blank" class="skill-tag" style="background:rgba(56,230,197,0.1); border-color:rgba(56,230,197,0.3); color:#38e6c5; cursor:pointer; text-decoration:none;">Download PDF</a>
+                ` : `
+                  <span class="skill-tag" style="opacity:0.6;">External Upload</span>
+                `}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="opacity:0.3;font-size:0.85rem;">Could not load certificates.</p>';
+      }
+    }休憩
+
+    /* -------- INTERVIEW RESULTS -------- */
+    async function loadInterviewResults() {
+      const container = document.getElementById('interview-list');
+      if (!user) return;
+      try {
+        const res = await apiFetch(API, '/api/interview/results/me');
+        if (!res.ok) throw new Error();
+        const results = await res.json();
+
+        if (!results.length) {
+          container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No AI interview sessions recorded yet.</p>';
+          return;
+        }
+
+        container.innerHTML = results.slice(0, 10).map(r => {
+          const score = r.avgScore || 0;
+          const pct = Math.round((score / 10) * 100);
+          const color = pct >= 70 ? '#34d399' : pct >= 50 ? '#fbbf24' : '#f87171';
+          return `
+            <div class="cert-row" style="flex-direction:column; align-items:stretch; gap:10px; padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:800; font-size:0.95rem; color:#fff;">
+                    🎤 ${r.role || 'Software Engineer'} Interview
+                  </div>
+                  <div style="font-size:0.72rem; color:#a2a7c7; margin-top:2px;">
+                    ${r.questionType || 'mixed'} • ${r.level || 'mid'} level • ${new Date(r.completedAt || r.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:900; color:${color}; font-size:1.1rem;">${score.toFixed(1)}/10</div>
+                  <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">${pct}% Readiness</div>
+                </div>
+              </div>
+              <div style="height:4px; background:rgba(255,255,255,0.06); border-radius:99px; overflow:hidden;">
+                <div style="width:${pct}%; height:100%; background:${color}; border-radius:99px; transition:width 1s;"></div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="opacity:0.3;font-size:0.85rem;">Could not load interview history.</p>';
+      }
+    }
+
+    /* -------- LIVE CODING HISTORY -------- */
+    async function loadLiveCodingHistory() {
+      const container = document.getElementById('livecoding-list');
+      if (!user) return;
+      try {
+        const res = await apiFetch(LC_API, '/api/submissions');
+        if (!res.ok) throw new Error();
+        const subs = await res.json();
+
+        if (!subs.length) {
+          container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No live coding submissions yet.</p>';
+          return;
+        }
+
+        container.innerHTML = subs.slice(0, 15).map(s => {
+          const isAccepted = s.status === 'Accepted';
+          const color = isAccepted ? '#34d399' : '#f87171';
+          const icon = isAccepted ? '✅' : '❌';
+          return `
+            <div class="cert-row" style="padding:12px 16px; gap:1rem;">
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.9rem; color:#fff;">${icon} Problem ${s.problemId?.substring(0,8) || '---'}</div>
+                <div style="font-size:0.72rem; color:#a2a7c7; margin-top:2px;">
+                  ${s.language || 'code'} • ${new Date(s.createdAt).toLocaleString()}
+                </div>
+              </div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-weight:900; color:${color}; font-size:0.88rem; letter-spacing:0.5px;">${s.status}</div>
+                ${s.executionTime ? `<div style="font-size:0.7rem;color:#64748b;">${s.executionTime}ms</div>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="opacity:0.3;font-size:0.85rem;">Could not load live coding history.</p>';
+      }
+    }
+
+    /* -------- APTITUDE RESULTS -------- */
+    async function loadAptitudeResults() {
+      const container = document.getElementById('aptitude-list');
+      if (!user) return;
+      try {
+        const res = await apiFetch(LC_API, `/api/aptitude/results/${user.id || user._id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const results = await res.json();
+        
+        if (!results.length) {
+          container.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;">No aptitude results history yet.</p>';
+          return;
+        }
+
+        container.innerHTML = results.map(r => {
+          // API returns: { score (0-100), topic, category, correctAnswers, totalQuestions, completedAt }
+          const pct = r.score ?? r.percentage ?? 0;
+          const color = pct >= 70 ? '#34d399' : pct >= 40 ? '#fbbf24' : '#f87171';
+          const dateStr = r.completedAt || r.timestamp || r.date || r.createdAt;
+
+          return `
+            <div class="cert-row" style="flex-direction:column; align-items:stretch; gap:10px; padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:800; font-size:0.95rem; color:#fff;">
+                    🧠 ${r.topic || 'General Aptitude'} — ${r.category || ''}
+                  </div>
+                  <div style="font-size:0.72rem; color:#a2a7c7; margin-top:2px;">
+                    ${r.correctAnswers ?? '?'}/${r.totalQuestions ?? '?'} correct • ${dateStr ? new Date(dateStr).toLocaleDateString() : 'N/A'}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:900; color:${color}; font-size:1.2rem;">${pct}%</div>
+                  <div style="font-size:0.7rem; color:#64748b; margin-top:2px;">Score</div>
+                </div>
+              </div>
+              <div style="height:4px; background:rgba(255,255,255,0.06); border-radius:99px; overflow:hidden;">
+                <div style="width:${pct}%; height:100%; background:${color}; border-radius:99px;"></div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error('Aptitude load error:', e);
+        container.innerHTML = '<p style="opacity:0.3;font-size:0.85rem;">Could not load aptitude history.</p>';
+      }
     }
 
     /* -------- SUBMISSIONS -------- */
@@ -777,7 +1030,7 @@
       }
     }
 
-    async function saveAISkills() {
+    function saveAISkills() {
       const newSkills = aiExtractedSkills.filter(s => !userSkills.includes(s));
       if (newSkills.length === 0) {
         showToast('No new skills to add', 'info');
@@ -788,7 +1041,7 @@
       document.getElementById('ai-skills-section').classList.add('hidden');
       
       // Auto-save to profile for permanent storage
-      await saveProfile();
+      saveProfile();
       showToast(`Added ${newSkills.length} new skills and updated your profile!`, 'success');
     }
 
@@ -846,18 +1099,23 @@
       try {
         showToast('🤖 AI: Fetching real-time performance data...', 'info');
         
-        // 1. Get Coding Performance
-        const subRes = await apiFetch(LC_API, '/api/submissions');
-        const subs = await subRes.json();
+        // 1. Get Coding Performance (fresh fetch — no stale global)
+        const [subRes, certRes, perfRes] = await Promise.all([
+          apiFetch(LC_API, '/api/submissions').catch(() => ({ json: () => [] })),
+          apiFetch(API, '/api/certificates').catch(() => ({ json: () => [] })),
+          apiFetch(API, '/api/performance').catch(() => ({ json: () => ({}) }))
+        ]);
+        const subs = await subRes.json().catch(() => []);
+        const certs = await certRes.json().catch(() => []);
+        const freshStats = await perfRes.json().catch(() => ({}));
+
         const accepted = subs.filter(s => s.status === 'Accepted').length;
         const total = Math.max(subs.length, 1);
         const accuracy = Math.round((accepted / total) * 100);
+        const assessmentAccuracy = freshStats.avgAccuracy || 0;
 
-        // 2. Get Certificate Trust (Basic average for now)
-        const certRes = await apiFetch(API, '/api/certificates');
-        const certs = await certRes.json();
+        // 2. Get Certificate Trust
         const verifiedCerts = certs.filter(c => c.status === 'VERIFIED');
-        const certTrust = verifiedCerts.length > 0 ? 90 : 20; // Simplified trust score
 
         // 3. Call ML Service Scoring Engine
         showToast('🤖 AI: Computing hybrid credibility score...', 'info');
@@ -865,11 +1123,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            assessment_score: realStats.avgAccuracy || 0, 
+            assessment_score: assessmentAccuracy,
             coding_score: accuracy,
             candidate_skills: userSkills,
             certificate_scores: verifiedCerts.map(c => c.trust_score || 80),
-            assessment_scores_list: [realStats.avgAccuracy || 0]
+            assessment_scores_list: [assessmentAccuracy]
           })
         });
 

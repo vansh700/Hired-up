@@ -3,6 +3,12 @@
  * Handles Navigation, Auth State Simulation, and Global Interactions
  */
 
+// Apply saved theme IMMEDIATELY to prevent flash of wrong colours
+(function() {
+    const t = localStorage.getItem('hiredUpTheme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('HiredUp: System Online');
     initScrollEffects();
@@ -313,7 +319,7 @@ async function fetchRecentTalent() {
                     <div style="width: 40px; height: 40px; background: ${color}1a; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: ${color}; margin-bottom: 1rem;">
                         ${c.fullname.charAt(0).toUpperCase()}
                     </div>
-                    <div style="font-weight: 800; font-size: 0.9rem; color: #fff;">${c.fullname.split(' ')[0].toUpperCase()}</div>
+                    <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main);">${c.fullname.split(' ')[0].toUpperCase()}</div>
                     <div style="font-size: 0.65rem; opacity: 0.5; font-family: 'JetBrains Mono', monospace; margin-top: 0.25rem; color: ${color};">${expertise}</div>
                     <div class="flex items-center gap-2 mt-4">
                         <div style="width: 6px; height: 6px; background: ${color}; border-radius: 50%; box-shadow: 0 0 10px ${color};"></div>
@@ -450,8 +456,9 @@ function initFullscreenToggle() {
     document.addEventListener('fullscreenchange', updateIcon);
 }
 
-// Call toggle initializations directly
-initThemeToggle();
-initFullscreenToggle();
+// Call toggle initializations directly (after DOM is ready)
+document.addEventListener('DOMContentLoaded', () => {
+    initFullscreenToggle();
+});
 
 document.addEventListener('DOMContentLoaded', fetchRecentTalent);

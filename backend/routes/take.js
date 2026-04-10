@@ -245,12 +245,52 @@ router.post('/submit', async (req, res) => {
     ca.weighted_score = weightedScore;
     ca.answers = finalAnswers;
 
+    const Application = require('../models/Application');
+    
     await ca.save();
+
+    // Trigger Application Creation logic
+    try {
+      // Check if there are any other assessments for this job that the candidate hasn't completed
+      const totalAssessments = await Assessment.countDocuments({ job_id: ca.job_id });
+      const completedAssessments = await CandidateAssessment.countDocuments({
+        candidate_id: req.user.id,
+        job_id: ca.job_id,
+        status: 'COMPLETED'
+      });
+
+      if (completedAssessments >= totalAssessments) {
+        // All assessments done, create (or update) Application
+        const existingApp = await Application.findOne({ candidate_id: req.user.id, job_id: ca.job_id });
+        if (!existingApp) {
+          // Calculate an overall score (average of weighted scores)
+          const allCa = await CandidateAssessment.find({
+            candidate_id: req.user.id,
+            job_id: ca.job_id,
+            status: 'COMPLETED'
+          });
+          const avgScore = allCa.reduce((acc, curr) => acc + curr.weighted_score, 0) / (allCa.length || 1);
+
+          const newApp = new Application({
+            candidate_id: req.user.id,
+            job_id: ca.job_id,
+            status: 'APPLIED',
+            overall_score: Math.round(avgScore)
+          });
+          await newApp.save();
+          console.log(`✅ Application created for candidate ${req.user.id} and job ${ca.job_id}`);
+        }
+      }
+    } catch (appErr) {
+      console.error('Application auto-submission error:', appErr);
+      // Don't fail the response if application creation fails
+    }
 
     res.json({
       message: 'Assessment submitted',
       rawScore: totalRaw,
       weightedScore,
+      applied: true // hint to frontend
     });
   } catch (err) {
     console.error('Submit error:', err);

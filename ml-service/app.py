@@ -40,7 +40,7 @@ def verify_cert():
 
 @app.route('/verify/certificate/upload', methods=['POST'])
 def verify_upload():
-    """Verify certificate from uploaded file."""
+    """Verify certificate from uploaded file (PDF or Image)."""
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -48,17 +48,21 @@ def verify_upload():
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
 
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({"error": "Only PDF files supported"}), 400
+    ext = file.filename.lower().split('.')[-1]
+    if ext not in ['pdf', 'jpg', 'jpeg', 'png']:
+        return jsonify({"error": f"Unsupported file type: {ext}"}), 400
 
     import tempfile
-    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tf:
+    with tempfile.NamedTemporaryFile(suffix=f'.{ext}', delete=False) as tf:
         file.save(tf.name)
         try:
             result = verify_certificate(file_path=tf.name)
             return jsonify(result)
+        except Exception as e:
+            return jsonify({"error": str(e), "trust_score": 0, "status": "FAILED"}), 500
         finally:
-            os.unlink(tf.name)
+            if os.path.exists(tf.name):
+                os.unlink(tf.name)
 
 
 @app.route('/score/credibility', methods=['POST'])
@@ -250,21 +254,24 @@ def generate_questions():
         # Try Gemini API if key is set
         import google.generativeai as genai
         api_key = os.environ.get('GEMINI_API_KEY')
-        if api_key:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = (
-                f"Generate exactly {count} {q_type} interview questions for a {level}-level {role}. "
-                f"Return ONLY a JSON array of strings, no explanation. Example format:\n"
-                f'["Question 1?", "Question 2?"]'
-            )
-            response = model.generate_content(prompt)
-            import json, re
-            match = re.search(r'\[.*\]', response.text, re.DOTALL)
-            if match:
-                raw_qs = json.loads(match.group())
-                questions = [{"id": i+1, "text": q, "type": q_type} for i, q in enumerate(raw_qs[:count])]
-                return jsonify({"questions": questions, "source": "gemini"})
+        if not api_key:
+            return jsonify({"error": "Gemini API key is not configured in the environment. Please add GEMINI_API_KEY to your .env file."}), 400
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = (
+            f"Generate exactly {count} {q_type} interview questions for a {level}-level {role}. "
+            f"Return ONLY a JSON array of strings, no explanation. Example format:\n"
+            f'["Question 1?", "Question 2?"]'
+        )
+        response = model.generate_content(prompt)
+        import json, re
+        match = re.search(r'\[.*\]', response.text, re.DOTALL)
+        if match:
+            raw_qs = json.loads(match.group())
+            questions = [{"id": i+1, "text": q, "type": q_type} for i, q in enumerate(raw_qs[:count])]
+            return jsonify({"questions": questions, "source": "gemini"})
+        else:
+            return jsonify({"error": "Failed to parse Gemini response"}), 500
     except Exception as e:
         pass  # Fall through to local bank
 

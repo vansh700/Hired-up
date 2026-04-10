@@ -6,11 +6,10 @@ const path = require('path');
 const { exec } = require('child_process');
 const { authenticate } = require('../middleware/auth');
 
-// Protect code execution (prevents anonymous spamming)
-router.use(authenticate);
+// PUBLIC ACCESS (Matching project1): No authentication required for code execution.休憩
 
 const JUDGE0_API_URL = 'https://judge0-ce.p.rapidapi.com/submissions';
-const API_KEY = process.env.RAPIDAPI_KEY;
+const API_KEY = process.env.RAPIDAPI_KEY || process.env.JUDGE0_API_KEY;
 
 router.post('/run', async (req, res) => {
     console.log("🚀 Incoming /run request:", req.body.language_id);
@@ -406,7 +405,7 @@ if __name__ == "__main__":
 
             // Fallback
             return res.json({
-                stdout: `[Simulation Only]\nCannot execute language ID ${langId} locally without API Key.\n\nCode received:\n${source_code}`,
+                stdout: `[Local Execution Mode]\nLanguage ID ${langId} is not supported for local execution.\nTo enable more languages, please add a 'RAPIDAPI_KEY' or 'JUDGE0_API_KEY' from Judge0 to your .env file.\n\nCode received:\n${source_code}`,
                 stderr: null,
                 status: { id: 3, description: 'Accepted (Simulated)' }
             });

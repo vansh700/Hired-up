@@ -25,13 +25,14 @@ const OutputConsole = ({ output, status, loading, customInput, onCustomInputChan
                     className={`px-4 py-2 text-xs font-bold ${activeTab === 'testcase' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-white'} cursor-pointer transition-colors uppercase tracking-wider`}>
                     Testcase
                 </div>
-                {aiFeedback && (
+                {/* AI Insight Hidden for now */}
+                {false && aiFeedback && (
                     <div 
                         onClick={() => setActiveTab('ai')}
                         className={`px-4 py-2 text-xs font-bold flex items-center gap-2 ${activeTab === 'ai' ? 'text-[#a855f7] border-b-2 border-[#a855f7]' : 'text-gray-500 hover:text-white'} cursor-pointer transition-colors uppercase tracking-wider animate-pulse`}>
                         <span className="text-lg">✨</span> AI Insight
                     </div>
-                )}
+                )}休憩
                 {status && (
                     <div className="ml-auto flex items-center gap-2">
                         <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${(status === 'Accepted' || status === 'Success') ? 'text-[#00b8a3] bg-[#00b8a3]/10' :

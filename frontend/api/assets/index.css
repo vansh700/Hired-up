@@ -640,30 +640,80 @@ button:disabled {
 
 /* --- Theme System --- */
 :root[data-theme="light"] {
-  --bg-dark: #f4f7fb;
-  --bg-card: rgba(255, 255, 255, 0.88);
-  --bg-glass: rgba(255, 255, 255, 0.76);
-  --border-subtle: rgba(37, 59, 97, 0.1);
-  --border-glow: rgba(37, 99, 235, 0.2);
-  --primary: #2563eb;
-  --primary-hover: #1e4fd1;
-  --primary-glow: rgba(37, 99, 235, 0.18);
-  --accent: #0ea5a6;
-  --accent-glow: rgba(14, 165, 166, 0.16);
-  --text-main: #10203a;
-  --text-muted: #5f708c;
-  --text-dim: #7f8fa6;
+  --bg-dark: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border-subtle: rgba(15, 23, 42, 0.1);
+  --border-glow: rgba(99, 102, 241, 0.2);
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-glow: rgba(79, 70, 229, 0.15);
+  --accent: #9333EA;
+  --accent-glow: rgba(147, 51, 234, 0.15);
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-dim: #64748B;
   --text-inverse: #ffffff;
-  --gradient-main: linear-gradient(135deg, #2563eb 0%, #4f8cff 50%, #0ea5a6 100%);
-  --gradient-text: linear-gradient(120deg, #10203a 8%, #1f4fa8 54%, #0b8b98 100%);
-  --gradient-surface: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(245, 247, 250, 0) 100%);
-  --gradient-glow: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(79, 140, 255, 0.1) 45%, rgba(14, 165, 166, 0.08) 100%);
+  --gradient-main: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+  --gradient-text: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);
+  --gradient-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+  --gradient-glow: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 80%);
 }
 
 :root[data-theme="light"] body {
-  background: linear-gradient(-45deg, #f9fbff, #eef4ff, #e0e7ff, #f3f4f6);
+  background: linear-gradient(-45deg, #f8fafc, #f1f5f9, #e2e8f0, #f8fafc);
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;
+}
+
+/* Light Mode Overrides for Transparency and Hardcoded Colors */
+:root[data-theme="light"] .glass,
+:root[data-theme="light"] .glass-card {
+    background: var(--bg-card);
+    border-color: rgba(15, 23, 42, 0.1);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .navbar {
+    background: rgba(255, 255, 255, 0.85);
+    border-bottom-color: rgba(15, 23, 42, 0.05);
+}
+
+:root[data-theme="light"] footer {
+    background: #f1f5f9;
+    border-top-color: rgba(15, 23, 42, 0.05);
+}
+
+/* Fix inline styles that use white backgrounds/borders in dark mode */
+:root[data-theme="light"] [style*="background: rgba(255,255,255,0.1)"],
+:root[data-theme="light"] [style*="background:rgba(255,255,255,0.1)"],
+:root[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.1)"] {
+    background: rgba(15, 23, 42, 0.05) !important;
+}
+
+:root[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.1)"],
+:root[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.05)"] {
+    border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Fix text camouflage for light text on light backgrounds */
+:root[data-theme="light"] .hero-subtitle,
+:root[data-theme="light"] .stat-sub,
+:root[data-theme="light"] p {
+    color: var(--text-muted) !important;
+}
+
+:root[data-theme="light"] .badge-v1,
+:root[data-theme="light"] .badge-live {
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.2);
+}
+
+:root[data-theme="light"] .theme-toggle-btn, 
+:root[data-theme="light"] .fullscreen-toggle-btn {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .theme-toggle-btn, .fullscreen-toggle-btn {
@@ -711,12 +761,16 @@ button:disabled {
 /* Exempt critical components that must stay white */
 :root[data-theme="light"] .btn-primary,
 :root[data-theme="light"] .btn-primary *,
+:root[data-theme="light"] .btn-glow,
+:root[data-theme="light"] .btn-glow *,
 :root[data-theme="light"] .act-btn.primary,
 :root[data-theme="light"] .act-btn.primary *,
 :root[data-theme="light"] .btn-main.blue,
-:root[data-theme="light"] .btn-main.blue *,
-:root[data-theme="light"] footer,
-:root[data-theme="light"] footer *,
-:root[data-theme="light"] .p-avatar {
+:root[data-theme="light"] .btn-main.blue * {
     color: #ffffff !important;
 }
+
+:root[data-theme="light"] footer p {
+    color: #475569 !important;
+}
+

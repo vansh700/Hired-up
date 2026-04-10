@@ -10,6 +10,12 @@ file_list.txt
 *.ps1_history
 .gemini/
 .cortex/
+tmp/
+**/uploads/
+**/*.pdf
+**/*.png
+**/*.jpg
+**/*.jpeg
 
 # Python
 __pycache__/

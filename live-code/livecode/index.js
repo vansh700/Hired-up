@@ -32,6 +32,10 @@ app.use((req, res, next) => {
     next();
 });
 
+// Import and apply auth middleware globally
+const { authenticate } = require('./middleware/auth');
+app.use(authenticate);
+
 // Routes
 const problemsRouter = require('./routes/problems');
 const codeExecRouter = require('./routes/codeExec');
@@ -50,7 +54,19 @@ app.get('/', (req, res) => {
     res.send('Live Code Practice API is running');
 });
 
+// Security Diagnostic
+app.get('/api/diag/security', (req, res) => {
+    const crypto = require('crypto');
+    const signature = crypto.createHash('sha256').update(JWT_SECRET).digest('hex').substring(0, 8);
+    res.json({ service: 'live-code', port: PORT, signature, secret_len: JWT_SECRET.length });
+});
+
 // Start Server
+const crypto = require('crypto');
+const JWT_SECRET = 'skillfirst-hire-platform-super-secret-key-2024';
+const secretHash = crypto.createHash('sha256').update(JWT_SECRET).digest('hex').substring(0, 8);
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
+    console.log(`🔒 Security Signature: [${secretHash}]`);
 });

@@ -225,6 +225,13 @@
         </div>
       </div>
 
+      <!-- API HEALTH DIAGNOSTIC -->
+      <div style="margin: -1rem 0 2rem; padding: 0.75rem 1.25rem; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items:center; gap: 1rem; font-family: monospace; font-size: 0.7rem;">
+        <div id="api-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></div>
+        <div style="color: #64748b; letter-spacing: 0.5px;">API FEED: <span id="api-status-text" style="color:#cbd5e1;">POLLING...</span></div>
+        <div style="color: #4f46e5; margin-left: auto;" id="api-last-count">FETCHING DATA</div>
+      </div>
+
       <!-- MAIN GRID: Rankings + Chart -->
       <div style="display:grid;grid-template-columns:1fr 320px;gap:2rem;margin-bottom:2rem;" id="main-grid">
 
@@ -240,6 +247,7 @@
                 <option value="">— Select Job —</option>
               </select>
               <button onclick="refreshRankings()" style="background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.3);color:#a5b4fc;padding:0.5rem 1rem;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.8rem;">↻ Refresh</button>
+              <button id="weights-btn" onclick="openWeightsModal()" style="background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.3);color:#67e8f9;padding:0.5rem 1rem;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.8rem;">⚖ Ranking Settings</button>
             </div>
           </div>
 
@@ -337,6 +345,26 @@
   </div>
   <div id="panel-overlay" onclick="closePanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:499;backdrop-filter:blur(4px);"></div>
 
+  <!-- RANKING WEIGHTS MODAL -->
+  <div id="weights-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+    <div style="background:#0f172a;border:1px solid rgba(79,70,229,0.4);border-radius:24px;padding:2.5rem;width:90%;max-width:500px;box-shadow:0 30px 60px rgba(0,0,0,0.6);position:relative;">
+      <button onclick="closeWeightsModal()" style="position:absolute;top:1.25rem;right:1.25rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;padding:0.3rem 0.65rem;cursor:pointer;font-size:0.85rem;">✕</button>
+      <div style="margin-bottom:1.75rem;">
+        <div style="font-size:0.65rem;letter-spacing:3px;color:#475569;font-weight:900;text-transform:uppercase;margin-bottom:0.5rem;">Customise</div>
+        <h2 style="font-size:1.4rem;font-weight:800;margin:0;letter-spacing:-0.5px;">Ranking <span style="background:linear-gradient(90deg,#4f46e5,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Weights</span></h2>
+        <p style="color:#64748b;font-size:0.82rem;margin-top:0.4rem;">Adjust how each factor contributes to candidate score. Total must equal 100.</p>
+      </div>
+      <div id="weights-sliders" style="display:flex;flex-direction:column;gap:1.25rem;"></div>
+      <div style="margin-top:1.5rem;display:flex;justify-content:space-between;align-items:center;">
+        <div id="weights-total-badge" style="font-size:0.8rem;font-weight:700;padding:0.3rem 0.75rem;border-radius:99px;background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.25);">Total: 100</div>
+        <div style="display:flex;gap:0.75rem;">
+          <button onclick="resetWeights()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;padding:0.65rem 1.25rem;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.82rem;">Reset</button>
+          <button id="save-weights-btn" onclick="saveWeights()" style="background:linear-gradient(135deg,#4f46e5,#06b6d4);border:none;color:#fff;padding:0.65rem 1.5rem;border-radius:10px;font-weight:800;cursor:pointer;font-size:0.82rem;">Save & Re-rank</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script>
     /* ============ AUTH CHECK ============ */
@@ -346,8 +374,115 @@
       window.location.href = 'auth.html';
     }
 
+    /* ============ WEIGHTS MODAL ============ */
+    const DEFAULT_WEIGHTS = {
+      assessment_weight: 35,
+      coding_weight:     25,
+      cert_weight:       20,
+      learning_weight:   10,
+      skill_weight:      10
+    };
+    let currentWeights = { ...DEFAULT_WEIGHTS };
+
+    const WEIGHT_LABELS = {
+      assessment_weight: { label: 'Assessment Score',       color: '#4f46e5' },
+      coding_weight:     { label: 'Coding Challenges',      color: '#06b6d4' },
+      cert_weight:       { label: 'Verified Certificates',  color: '#10b981' },
+      learning_weight:   { label: 'Learning Aptitude',      color: '#f59e0b' },
+      skill_weight:      { label: 'Skill Relevance',        color: '#a855f7' },
+    };
+
+    function buildSliders(weights) {
+      const container = document.getElementById('weights-sliders');
+      container.innerHTML = Object.entries(WEIGHT_LABELS).map(([key, meta]) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+            <label style="font-size:0.82rem;font-weight:700;color:#e2e8f0;" for="slider-${key}">${meta.label}</label>
+            <span id="val-${key}" style="font-size:0.85rem;font-weight:900;color:${meta.color};min-width:36px;text-align:right;">${weights[key]}%</span>
+          </div>
+          <input id="slider-${key}" type="range" min="0" max="100" value="${weights[key]}"
+            style="width:100%;accent-color:${meta.color};height:6px;cursor:pointer;"
+            oninput="onSliderChange('${key}', this.value)">
+        </div>
+      `).join('');
+      updateTotalBadge();
+    }
+
+    function onSliderChange(key, val) {
+      currentWeights[key] = parseInt(val);
+      document.getElementById('val-' + key).textContent = val + '%';
+      updateTotalBadge();
+    }
+
+    function updateTotalBadge() {
+      const total = Object.values(currentWeights).reduce((a, b) => a + b, 0);
+      const badge = document.getElementById('weights-total-badge');
+      badge.textContent = 'Total: ' + total;
+      badge.style.background = total === 100 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
+      badge.style.color       = total === 100 ? '#34d399' : '#f87171';
+      badge.style.borderColor = total === 100 ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)';
+      document.getElementById('save-weights-btn').disabled = total !== 100;
+      document.getElementById('save-weights-btn').style.opacity = total !== 100 ? '0.5' : '1';
+    }
+
+    async function openWeightsModal() {
+      const jobId = document.getElementById('job-selector').value;
+      if (!jobId) { showToast('Select a job first', 'error'); return; }
+
+      // load saved weights if available
+      try {
+        const res = await apiFetch(`/api/scoring/weights/${jobId}`);
+        if (res.ok) {
+          const data = await res.json();
+          currentWeights = { ...DEFAULT_WEIGHTS, ...data.weights };
+        }
+      } catch { /* use defaults */ }
+
+      buildSliders(currentWeights);
+      document.getElementById('weights-modal').style.display = 'flex';
+    }
+
+    function closeWeightsModal() {
+      document.getElementById('weights-modal').style.display = 'none';
+    }
+
+    function resetWeights() {
+      currentWeights = { ...DEFAULT_WEIGHTS };
+      buildSliders(currentWeights);
+    }
+
+    async function saveWeights() {
+      const jobId = document.getElementById('job-selector').value;
+      if (!jobId) return;
+      const total = Object.values(currentWeights).reduce((a, b) => a + b, 0);
+      if (total !== 100) { showToast('Weights must total 100', 'error'); return; }
+
+      const btn = document.getElementById('save-weights-btn');
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+
+      try {
+        const res = await apiFetch(`/api/scoring/weights/${jobId}`, {
+          method: 'PUT',
+          body: JSON.stringify(currentWeights)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        showToast('Ranking weights saved! Re-ranking...', 'success');
+        closeWeightsModal();
+        await loadRankings();
+      } catch (err) {
+        showToast(err.message || 'Failed to save weights', 'error');
+      } finally {
+        btn.textContent = 'Save & Re-rank';
+        btn.disabled = false;
+      }
+    }
+
     /* ============ GLOBALS ============ */
-    const API = 'http://127.0.0.1:5000';
+    // Smart host detection: If UI is on 5000, use relative paths. If on 5173 (Vite) or other, point to 5000.
+    const API = (window.location.port === '5000') ? '' : 'http://localhost:5000';
     let allRankings = [];
     let scoreChart = null;
     let candidateStatuses = JSON.parse(localStorage.getItem('candidateStatuses') || '{}');
@@ -425,12 +560,28 @@
 
         const jobs = jobsRes.ok ? await jobsRes.json() : [];
         const cands = candsRes.ok ? await candsRes.json() : [];
+ 
+        // Diagnostic updates
+        const indicator = document.getElementById('api-indicator');
+        const statusText = document.getElementById('api-status-text');
+        const lastCount = document.getElementById('api-last-count');
+        
+        if (jobsRes.ok) {
+            indicator.style.background = '#10b981';
+            statusText.textContent = 'CONNECTED (READY)';
+            lastCount.textContent = `SYNCED: ${jobs.length} JOBS | ${cands.length} CANDIDATES`;
+        } else {
+            indicator.style.background = '#ef4444';
+            statusText.textContent = `ERROR: ${jobsRes.status}`;
+            lastCount.textContent = 'LINK REFUSED';
+        }
 
         document.getElementById('stat-jobs').textContent = jobs.length;
         document.getElementById('stat-cands').textContent = cands.length;
 
         // Populate job selector
         const sel = document.getElementById('job-selector');
+        sel.innerHTML = '<option value="">— Select Job —</option>';
         jobs.forEach(j => {
           const opt = document.createElement('option');
           opt.value = j.id;
@@ -465,6 +616,7 @@
         const res = await apiFetch(`/api/scoring/rankings/${jobId}`);
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
+        window.lastRankingsData = data; // Store for other UI components
         allRankings = data.rankings || [];
 
         renderRankings(allRankings);
@@ -473,9 +625,14 @@
         updatePipeline();
 
       } catch (err) {
-        // Fallback: fetch candidates and show with local scores
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f59e0b;font-size:0.85rem;">Rankings API not reachable. Showing registered candidates.</td></tr>`;
-        console.error('Rankings error:', err);
+        console.error('Rankings load error:', err);
+        const errorMsg = err.message || 'Unknown Network Error';
+        showToast(`Rankings API Issue: ${errorMsg}`, 'error');
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:3rem;color:#f87171;">
+          <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚠️</div>
+          TECHNICAL ERROR: ${errorMsg}<br>
+          <span style="font-size:0.75rem;opacity:0.7;">Check if you are logged in correctly and the Backend (Port 5000) is running.</span>
+        </td></tr>`;
       }
     }
 
@@ -580,6 +737,16 @@
           <div style="font-size:1.5rem;font-weight:900;color:#34d399;">✅ ×${r.certificatesVerified || 0}</div>
         </div>
 
+        <div style="margin-bottom:1.5rem;">
+          <div style="font-size:0.75rem;font-weight:800;letter-spacing:2px;color:#475569;text-transform:uppercase;margin-bottom:0.75rem;">Assessed Topics</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            ${(window.lastRankingsData?.challenges || []).length > 0 
+                ? window.lastRankingsData.challenges.map(c => `<span style="background:rgba(56,230,197,0.1);color:#38e6c5;padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;font-weight:700;border:1px solid rgba(56,230,197,0.2);">Lab: ${c.substring(0,8)}...</span>`).join('')
+                : `<span style="opacity:0.4;font-size:0.8rem;">General Technical Assessment</span>`
+            }
+          </div>
+        </div>
+
         <div style="margin-bottom:2rem;">
           <div style="font-size:0.75rem;font-weight:800;letter-spacing:2px;color:#475569;text-transform:uppercase;margin-bottom:0.75rem;">Update Status</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
@@ -597,6 +764,10 @@
         <a href="skillgap.html?candidateId=${candidateId}&jobId=${document.getElementById('job-selector').value}" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.9rem;border-radius:12px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.25);color:#67e8f9;text-decoration:none;font-weight:700;font-size:0.85rem;margin-bottom:0.75rem;">
           📊 View Skill Gap Analysis
         </a>
+
+        <button onclick="openIssueModal('${candidateId}', '${r.fullName || ''}')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.9rem;border-radius:12px;background:rgba(56,230,197,0.1);border:1px solid rgba(56,230,197,0.25);color:#38e6c5;cursor:pointer;font-weight:700;font-size:0.85rem;">
+          📜 Issue Verifiable Certificate
+        </button>
       `;
 
       document.getElementById('detail-panel').classList.add('open');
@@ -607,6 +778,65 @@
       const row = document.getElementById(`row-${candidateId}`);
       if (row) row.classList.add('selected');
     }
+
+    function openIssueModal(candidateId, name) {
+      const modal = document.createElement('div');
+      modal.id = 'issue-modal';
+      modal.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;background:#0f172a;border:1px solid #1e293b;border-radius:20px;padding:2rem;z-index:1001;box-shadow:0 25px 50px rgba(0,0,0,0.5);';
+      modal.innerHTML = `
+        <h3 style="margin:0 0 1.5rem;font-weight:800;color:#fff;">Issue Verifiable Cert</h3>
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.7rem;color:#64748b;text-transform:uppercase;margin-bottom:0.5rem;">CANDIDATE NAME</label>
+          <input type="text" id="i-name" value="${name}" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid #1e293b;color:#fff;padding:0.75rem;border-radius:10px;outline:none;">
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <label style="display:block;font-size:0.7rem;color:#64748b;text-transform:uppercase;margin-bottom:0.5rem;">COURSE / SKILL NAME</label>
+          <input type="text" id="i-course" placeholder="e.g. Advanced Java Engineering" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid #1e293b;color:#fff;padding:0.75rem;border-radius:10px;outline:none;">
+        </div>
+        <div style="display:flex;gap:1rem;">
+          <button onclick="this.parentElement.parentElement.remove()" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid #1e293b;color:#fff;padding:0.75rem;border-radius:10px;cursor:pointer;">Cancel</button>
+          <button onclick="submitIssue('${candidateId}')" id="issue-btn" style="flex:1;background:#6d5cff;color:#fff;border:none;padding:0.75rem;border-radius:10px;font-weight:700;cursor:pointer;">Issue Cert</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    async function submitIssue(candidateId) {
+      const btn = document.getElementById('issue-btn');
+      const name = document.getElementById('i-name').value;
+      const course = document.getElementById('i-course').value;
+      
+      if (!name || !course) { showToast('Please fill all fields', 'error'); return; }
+      
+      btn.textContent = 'Issuing...'; btn.disabled = true;
+      try {
+        const res = await apiFetch('/api/certificates/issue', {
+          method: 'POST',
+          body: JSON.stringify({ issued_to_name: name, course_name: course, candidate_id: candidateId })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error);
+
+        document.getElementById('issue-modal').innerHTML = `
+          <div style="text-align:center;">
+            <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+            <h3 style="margin:0 0 0.5rem;color:#fff;">Certificate Issued!</h3>
+            <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.5rem;">Digital credential generated and QR code ready.</p>
+            <div style="background:white;padding:10px;border-radius:10px;display:inline-block;margin-bottom:1.5rem;">
+                <img src="${data.qr_code}" style="width:150px;height:150px;">
+            </div>
+            <div style="display:grid;gap:0.75rem;">
+                <a href="${data.verification_url}" target="_blank" style="display:block;background:rgba(109,92,255,0.1);color:#a5b4fc;padding:0.75rem;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.85rem;border:1px solid rgba(109,92,255,0.3);">View Public Record</a>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width:100%;background:#6d5cff;color:#fff;border:none;padding:0.75rem;border-radius:10px;font-weight:700;cursor:pointer;">Done</button>
+            </div>
+          </div>
+        `;
+        showToast('Certificate successfully issued!', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to issue certificate', 'error');
+        btn.textContent = 'Issue Cert'; btn.disabled = false;
+      }
+    }休憩
 
     function closePanel() {
       document.getElementById('detail-panel').classList.remove('open');
@@ -668,7 +898,10 @@
             ${(j.skills_required||j.techStack||[]).slice(0,4).map(s => `<span class="skill-tag">${s}</span>`).join('')}
           </div>
           <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:1rem;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.72rem;opacity:0.4;">${new Date(j.created_at||j.createdAt||Date.now()).toLocaleDateString()}</span>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:0.72rem;opacity:0.4;">${new Date(j.created_at||j.createdAt||Date.now()).toLocaleDateString()}</span>
+                <span style="font-size:0.65rem;color:#38e6c5;font-weight:600;">⚡ ${j.challenges ? j.challenges.length : 0} Coding Labs</span>
+            </div>
             <span style="font-size:0.8rem;font-weight:700;color:#a5b4fc;">View Rankings →</span>
           </div>
         </div>

@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @returns {Promise<object>} - Analysis results.
  */
 async function analyzeCode(code, problemDescription, language = 'javascript') {
-  const modelsToTry = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro'];
+  const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-1.5-pro-latest'];
   let lastError = null;
 
   for (const modelName of modelsToTry) {

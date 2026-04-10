@@ -12,18 +12,29 @@ const Dashboard = () => {
         return params.get('tag') || 'All';
     });
 
+    const [solvedProblemIds, setSolvedProblemIds] = useState(new Set());
+
     useEffect(() => {
-        const fetchProblems = async () => {
+        const fetchProblemsAndSubmissions = async () => {
             try {
-                const { data } = await api.get('/problems');
-                setProblems(data);
+                const [{ data: probs }, { data: subs }] = await Promise.all([
+                    api.get('/problems'),
+                    api.get('/submissions').catch(() => ({ data: [] })) // Fallback if not logged in
+                ]);
+                setProblems(probs);
+                
+                // Track which problems the user has successfully solved
+                const solvedSet = new Set(
+                    subs.filter(s => s.status === 'Accepted' || s.status === 'Success').map(s => s.problemId)
+                );
+                setSolvedProblemIds(solvedSet);
             } catch (err) {
-                console.error('Failed to fetch problems', err);
+                console.error('Failed to fetch data', err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProblems();
+        fetchProblemsAndSubmissions();
     }, []);
 
     const [theme, setTheme] = useState(() => localStorage.getItem('hiredUpTheme') || 'dark');
@@ -129,6 +140,12 @@ const Dashboard = () => {
                     >
                         Aptitude 🧠
                     </button>
+                    <button
+                        onClick={() => navigate('/jobs')}
+                        className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+                    >
+                        Jobs 💼
+                    </button>
                 </div>
             </header>
 
@@ -166,7 +183,11 @@ const Dashboard = () => {
                                         className={`cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-[var(--leetcode-dark-bg)]' : 'bg-[var(--leetcode-dark-layer)]'} hover:opacity-80`}
                                     >
                                         <td className="px-6 py-4">
-                                            <div className="w-4 h-4 rounded-full border border-gray-600"></div>
+                                            {solvedProblemIds.has(problem._id) ? (
+                                                <div className="w-5 h-5 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center text-green-500 text-xs shadow-sm shadow-green-500/20">✓</div>
+                                            ) : (
+                                                <div className="w-4 h-4 rounded-full border border-gray-600"></div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-[15px] font-medium text-[var(--text-primary)] hover:text-blue-400 transition-colors">

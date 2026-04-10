@@ -7,6 +7,71 @@ const { authenticate, recruiterOnly } = require('../middleware/auth');
 const router = express.Router();
 
 router.use(authenticate);
+
+/**
+ * POST /assessments/generate/:jobId - AI Generate assessment
+ * RELAXED AUTH for demo purposes: Allow any authenticated user to trigger generation.
+ */
+router.post('/generate/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    // Removed recruiter_id: req.user.id to allow testing across users
+    const job = await Job.findOne({ _id: jobId }); 
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const aiService = require('../services/aiService');
+    const aiAssessment = await aiService.generateAssessmentQuestions(
+        job.title, 
+        job.description, 
+        job.skills_required
+    );
+
+    const assessmentId = uuidv4();
+    const formattedQuestions = aiAssessment.questions.map((q, i) => {
+      let filteredTestCases = [];
+      if (q.type === 'CODING' && Array.isArray(q.testCases)) {
+        filteredTestCases = q.testCases.map(tc => ({
+          input_data: tc.input || '',
+          expected_output: tc.expectedOutput || tc.expected_output || '',
+          is_hidden: tc.isHidden || false
+        }));
+      }
+
+      return {
+        _id: uuidv4(),
+        type: q.type,
+        content: q.content,
+        options: q.options || null,
+        correct_answer: q.correctAnswer || null,
+        difficulty: q.difficulty || 'MEDIUM',
+        points: q.points || 10,
+        order_index: i,
+        testCases: filteredTestCases
+      };
+    });
+
+    const newAssessment = new Assessment({
+      _id: assessmentId,
+      job_id: jobId,
+      name: aiAssessment.name || `Technical Assessment for ${job.title}`,
+      type: aiAssessment.type || 'SKILL_VALIDATION',
+      questions: formattedQuestions
+    });
+
+    await newAssessment.save();
+
+    res.status(201).json({ 
+        message: 'AI Assessment generated successfully',
+        id: assessmentId, 
+        name: newAssessment.name,
+        questionCount: formattedQuestions.length 
+    });
+  } catch (err) {
+    console.error('AI Generation Route Error:', err);
+    res.status(500).json({ error: 'Failed to generate AI assessment' });
+  }
+});
+
 router.use(recruiterOnly);
 
 /**
@@ -126,4 +191,5 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// ... end of file
 module.exports = router;

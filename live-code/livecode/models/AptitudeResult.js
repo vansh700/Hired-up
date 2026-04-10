@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const aptitudeResultSchema = new mongoose.Schema({
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,  // UUID from main backend — NOT a MongoDB ObjectId
         ref: 'User',
         required: true
     },

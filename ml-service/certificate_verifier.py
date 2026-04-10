@@ -1,17 +1,31 @@
-"""
-Certificate verification for Coursera, Udemy, edX, Google
-Uses metadata extraction, URL validation, and credential ID lookup where possible
-"""
-
 import re
 import json
+import os
+import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
+import numpy as np
 
 try:
     from PyPDF2 import PdfReader
 except ImportError:
     PdfReader = None
+
+try:
+    import cv2
+    from PIL import Image, ImageChops, ImageEnhance
+except ImportError:
+    cv2 = None
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
+
+try:
+    from pdf2image import convert_from_path
+except ImportError:
+    convert_from_path = None
 
 
 PLATFORMS = ['coursera', 'udemy', 'edx', 'google']
@@ -24,147 +38,202 @@ def extract_pdf_metadata(file_path: str) -> dict:
         reader = PdfReader(file_path)
         info = reader.metadata or {}
         text = ""
-        for page in reader.pages[:3]:  # First 3 pages
+        for page in reader.pages[:3]:
             text += page.extract_text() or ""
+        
+        # Enhanced metadata check for editing tools
+        creator = (getattr(info, 'creator', None) or info.get('/Creator') or "").lower()
+        producer = (getattr(info, 'producer', None) or info.get('/Producer') or "").lower()
+        
+        editing_tools = ['photoshop', 'canva', 'illustrator', 'gimp', 'inkscape', 'nitro', 'foxit']
+        is_edited = any(tool in creator or tool in producer for tool in editing_tools)
+
         return {
             "title": getattr(info, 'title', None) or info.get('/Title'),
             "author": getattr(info, 'author', None) or info.get('/Author'),
             "subject": getattr(info, 'subject', None) or info.get('/Subject'),
-            "creator": getattr(info, 'creator', None) or info.get('/Creator'),
+            "creator": creator,
+            "producer": producer,
+            "is_edited_tool_signature": is_edited,
             "text_sample": text[:2000],
         }
     except Exception as e:
         return {"error": str(e)}
 
+def perform_ela(image_path: str, quality: int = 90) -> float:
+    """
+    Perform Error Level Analysis (ELA) to detect image tampering.
+    Returns a 'suspicion_score' (0-100).
+    """
+    if not cv2: return 0.0
+    
+    try:
+        filename = image_path
+        resaved_filename = image_path + '.resaved.jpg'
+        
+        im = Image.open(filename).convert('RGB')
+        im.save(resaved_filename, 'JPEG', quality=quality)
+        
+        resaved_im = Image.open(resaved_filename)
+        ela_im = ImageChops.difference(im, resaved_im)
+        
+        extrema = ela_im.getextrema()
+        max_diff = max([ex[1] for ex in extrema])
+        if max_diff == 0: max_diff = 1
+        
+        scale = 255.0 / max_diff
+        ela_im = ImageEnhance.Brightness(ela_im).enhance(scale)
+        
+        # Calculate mean brightness - higher values in tampered areas usually increase mean
+        # We also look for localized high-variance regions (implementation simplified for MVP)
+        stats = np.array(ela_im).mean()
+        
+        os.remove(resaved_filename)
+        
+        # Heuristic: naturally compressed images have lower mean diffs
+        # Tampered regions (different compression) show up as bright spots
+        return min(100, stats * 2.5) 
+    except Exception:
+        return 0.0
 
-def detect_platform(metadata: dict, url: str = None) -> str:
-    """Detect platform from metadata or URL."""
-    text = (metadata.get("text_sample", "") + " " + (url or "")).lower()
+def extract_text_advanced(file_path: str) -> str:
+    """Try OCR if text extraction fails."""
+    text = ""
+    # 1. try basic PDF extraction
+    if file_path.lower().endswith('.pdf') and PdfReader:
+        try:
+            reader = PdfReader(file_path)
+            for page in reader.pages[:3]:
+                text += page.extract_text() or ""
+        except: pass
+        
+    # 2. try OCR if text is sparse or it's an image
+    if len(text.strip()) < 50 and pytesseract:
+        try:
+            if file_path.lower().endswith('.pdf') and convert_from_path:
+                images = convert_from_path(file_path, first_page=1, last_page=1)
+                if images:
+                    text = pytesseract.image_to_string(images[0])
+            else:
+                text = pytesseract.image_to_string(Image.open(file_path))
+        except: pass
+        
+    return text
+
+def detect_platform(text: str, metadata: dict, url: str = None) -> str:
+    """Detect platform from text, metadata or URL."""
     creators = (metadata.get("creator", "") or "").lower()
+    producers = (metadata.get("producer", "") or "").lower()
     title = (metadata.get("title", "") or "").lower()
 
-    combined = f"{text} {creators} {title}"
+    combined = f"{text.lower()} {creators} {producers} {title} {(url or '').lower()}"
 
-    if "coursera" in combined or "coursera.org" in (url or ""):
-        return "coursera"
-    if "udemy" in combined or "udemy.com" in (url or ""):
-        return "udemy"
-    if "edx" in combined or "edx.org" in combined:
-        return "edx"
-    if "google" in combined or "google.com" in combined or "grow.google" in combined:
-        return "google"
-
+    if "coursera" in combined: return "coursera"
+    if "udemy" in combined: return "udemy"
+    if "edx" in combined: return "edx"
+    if "google" in combined: return "google"
+    
     return "unknown"
-
-
-def verify_coursera(metadata: dict, url: str = None) -> tuple[int, str]:
-    """Verify Coursera certificate. Returns (trust_score, status)."""
-    text = metadata.get("text_sample", "").lower()
-    has_coursera = "coursera" in text or (url and "coursera.org" in url)
-    has_credential = bool(re.search(r'[a-zA-Z0-9]{20,}', text)) or (url and len(url) > 50)
-    has_date = bool(re.search(r'\d{4}|\d{1,2}/\d{1,2}/\d{2,4}', text))
-    has_name = len(metadata.get("author", "") or metadata.get("subject", "")) > 3
-
-    score = 0
-    if has_coursera: score += 30
-    if has_credential: score += 25
-    if has_date: score += 25
-    if has_name: score += 20
-
-    if score >= 80:
-        return (min(100, score), "VERIFIED")
-    if score >= 50:
-        return (score, "PENDING")
-    return (score, "UNVERIFIABLE")
-
-
-def verify_udemy(metadata: dict, url: str = None) -> tuple[int, str]:
-    """Verify Udemy certificate."""
-    text = metadata.get("text_sample", "").lower()
-    has_udemy = "udemy" in text or (url and "udemy.com" in url)
-    has_date = bool(re.search(r'\d{4}|\d{1,2}/\d{1,2}/\d{2,4}', text))
-    has_course = "course" in text or "certificate" in text
-
-    score = 0
-    if has_udemy: score += 40
-    if has_date: score += 30
-    if has_course: score += 30
-
-    if score >= 80:
-        return (min(100, score), "VERIFIED")
-    if score >= 50:
-        return (score, "PENDING")
-    return (score, "UNVERIFIABLE")
-
-
-def verify_edx(metadata: dict, url: str = None) -> tuple[int, str]:
-    """Verify edX certificate."""
-    text = metadata.get("text_sample", "").lower()
-    has_edx = "edx" in text or (url and "edx.org" in url)
-    has_credential = "credential" in text or "verified" in text
-    has_date = bool(re.search(r'\d{4}', text))
-
-    score = 0
-    if has_edx: score += 40
-    if has_credential: score += 30
-    if has_date: score += 30
-
-    if score >= 80:
-        return (min(100, score), "VERIFIED")
-    if score >= 50:
-        return (score, "PENDING")
-    return (score, "UNVERIFIABLE")
-
-
-def verify_google(metadata: dict, url: str = None) -> tuple[int, str]:
-    """Verify Google certificate."""
-    text = metadata.get("text_sample", "").lower()
-    has_google = "google" in text or "grow.google" in (url or "")
-    has_cert = "certificate" in text or "certified" in text
-    has_skill = "skill" in text or "career" in text
-
-    score = 0
-    if has_google: score += 40
-    if has_cert: score += 30
-    if has_skill: score += 30
-
-    if score >= 80:
-        return (min(100, score), "VERIFIED")
-    if score >= 50:
-        return (score, "PENDING")
-    return (score, "UNVERIFIABLE")
-
 
 def verify_certificate(file_path: str = None, url: str = None) -> dict:
     """
-    Main verification entry point.
-    Returns: { platform, trust_score, status, metadata }
+    AI-powered certificate verification with fraud detection.
     """
+    if not file_path and not url:
+        return {"error": "Missing input", "status": "FAILED"}
+
+    results = {
+        "platform": "unknown",
+        "trust_score": 0,
+        "status": "UNVERIFIABLE",
+        "fraud_detection": {
+            "tampering_detected": False,
+            "ela_score": 0,
+            "metadata_flag": False,
+            "reasons": []
+        },
+        "extracted_fields": {
+            "name": None,
+            "id": None,
+            "date": None
+        }
+    }
+
     metadata = {}
+    full_text = ""
+    
+    # 1. Extraction & Pre-processing
     if file_path and Path(file_path).exists():
         metadata = extract_pdf_metadata(file_path)
+        full_text = extract_text_advanced(file_path)
+        
+        # 2. Image Forensics (only for images or converted PDFs)
+        temp_img_path = None
+        if file_path.lower().endswith('.pdf') and convert_from_path:
+            try:
+                pages = convert_from_path(file_path, first_page=1, last_page=1)
+                if pages:
+                    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tf:
+                        pages[0].save(tf.name, 'JPEG')
+                        temp_img_path = tf.name
+            except: pass
+        else:
+            temp_img_path = file_path
+            
+        if temp_img_path:
+            ela_score = perform_ela(temp_img_path)
+            results["fraud_detection"]["ela_score"] = round(ela_score, 2)
+            if ela_score > 40:
+                results["fraud_detection"]["tampering_detected"] = True
+                results["fraud_detection"]["reasons"].append("Image forensics suggests pixel-level tampering (ELA mismatch)")
+            
+            if temp_img_path != file_path and temp_img_path:
+                try: os.remove(temp_img_path)
+                except: pass
     elif url:
-        metadata = {"text_sample": url, "creator": url}
+        full_text = url
+        metadata = {"text_sample": url}
 
-    platform = detect_platform(metadata, url)
+    # 3. Platform Detection
+    platform = detect_platform(full_text, metadata, url)
+    results["platform"] = platform
 
-    verifiers = {
-        "coursera": verify_coursera,
-        "udemy": verify_udemy,
-        "edx": verify_edx,
-        "google": verify_google,
-    }
+    # 4. Field Extraction (Regex)
+    # Name pattern: "Certificate of Completion to [Name]" or "Presented to [Name]"
+    name_match = re.search(r'(?:to|presented to|awarded to|this is to certify that)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', full_text, re.IGNORECASE)
+    if name_match: results["extracted_fields"]["name"] = name_match.group(1).strip()
+    
+    # ID pattern: XXXX-XXXX or alphanumeric combinations
+    id_match = re.search(r'(?:Certificate ID|Credential ID|Verify at|ID:)\s*([a-zA-Z0-9-]{8,})', full_text, re.IGNORECASE)
+    if id_match: results["extracted_fields"]["id"] = id_match.group(1).strip()
+    
+    # Date pattern
+    date_match = re.search(r'([A-Z][a-z]+\s+\d{1,2},\s+\d{4})', full_text)
+    if date_match: results["extracted_fields"]["date"] = date_match.group(1).strip()
 
-    verifier = verifiers.get(platform, verify_coursera)
-    trust_score, status = verifier(metadata, url)
+    # 5. Metadata Scoring
+    if metadata.get("is_edited_tool_signature"):
+        results["fraud_detection"]["metadata_flag"] = True
+        results["fraud_detection"]["reasons"].append(f"Document created using editing software ({metadata.get('creator', 'unknown')})")
 
-    if platform == "unknown":
-        trust_score = max(0, trust_score - 20)
-        status = "UNVERIFIABLE"
-
-    return {
-        "platform": platform,
-        "trust_score": trust_score,
-        "status": status,
-        "metadata": {k: v for k, v in metadata.items() if k != "text_sample" and v},
-    }
+    # 6. Final Trust Calculation
+    base_score = 0
+    if results["extracted_fields"]["name"]: base_score += 20
+    if results["extracted_fields"]["id"]: base_score += 30
+    if results["extracted_fields"]["date"]: base_score += 10
+    if platform != "unknown": base_score += 20
+    if len(full_text) > 200: base_score += 20
+    
+    # Penalty for fraud signals
+    penalty = 0
+    if results["fraud_detection"]["tampering_detected"]: penalty += 40
+    if results["fraud_detection"]["metadata_flag"]: penalty += 20
+    
+    final_score = max(0, base_score - penalty)
+    results["trust_score"] = final_score
+    
+    if final_score >= 70: results["status"] = "VERIFIED"
+    elif final_score >= 40: results["status"] = "SUSPICIOUS"
+    else: results["status"] = "FAILED"
+    
+    return results

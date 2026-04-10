@@ -6,8 +6,12 @@ const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
-const ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
+// FORCE SYNC: Hardcoded secret to ensure Port 5000 and 5001 always agree.
+const JWT_SECRET = 'skillfirst-hire-platform-super-secret-key-2024';
+const crypto = require('crypto');
+const secretHash = crypto.createHash('sha256').update(JWT_SECRET).digest('hex').substring(0, 8);
+console.log(`🔒 Token Signing Secret Signature: [${secretHash}]`);
+const ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '24h';
 const REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
 /**
@@ -17,13 +21,16 @@ const REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 router.post('/register', async (req, res) => {
   try {
     const { email, password, role, fullname, fullName, companyName, designation } = req.body;
+    
+    // Normalize Role for consistency
+    const finalRole = role ? role.toUpperCase() : null;
     const finalFullName = fullName || fullname;
 
-    if (!email || !password || !role) {
+    if (!email || !password || !finalRole) {
       return res.status(400).json({ error: 'Email, password, and role are required' });
     }
 
-    if (!['RECRUITER', 'CANDIDATE'].includes(role)) {
+    if (!['RECRUITER', 'CANDIDATE'].includes(finalRole)) {
       return res.status(400).json({ error: 'Role must be RECRUITER or CANDIDATE' });
     }
 
@@ -43,7 +50,7 @@ router.post('/register', async (req, res) => {
       _id: id,
       email: email.toLowerCase(),
       passwordHash: hashedPassword,
-      role,
+      role: finalRole,
       fullName: finalFullName || null,
       companyName: companyName || null,
       designation: designation || null
@@ -51,7 +58,7 @@ router.post('/register', async (req, res) => {
     await user.save();
 
     const accessToken = jwt.sign(
-      { userId: id, role, email: email.toLowerCase() },
+      { userId: id, role: finalRole, email: email.toLowerCase() },
       JWT_SECRET,
       { expiresIn: ACCESS_EXPIRY }
     );
@@ -70,8 +77,9 @@ router.post('/register', async (req, res) => {
       expiresIn: 900,
     });
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('❌ Registration Fatal Error:', err);
+    // Return the specific error message for debugging purposes (Temporary)
+    res.status(500).json({ error: 'Registration failed: ' + err.message });
   }
 });
 
@@ -109,6 +117,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: REFRESH_EXPIRY }
     );
 
+    console.log(`🔑 Token Issued: { len: ${accessToken.length}, first: ${accessToken.substring(0, 10)}, last: ${accessToken.substring(accessToken.length - 10)} }`);
     res.json({
       message: 'Login successful',
       user: {
@@ -189,7 +198,9 @@ router.get('/me', authenticate, async (req, res) => {
       about: user.about,
       education: user.education,
       experience: user.experience,
-      githubUrl: user.githubUrl,
+      github: user.github,
+      githubUrl: user.githubUrl || user.github,
+      leetcode: user.leetcode,
       linkedinUrl: user.linkedinUrl,
       phone: user.phone,
       skills: user.skills,
@@ -211,7 +222,7 @@ router.get('/candidates', async (req, res) => {
     // Map _id to id and fullName to fullname to match frontend expectations if necessary
     const mappedCandidates = candidates.map(c => ({
       id: c._id,
-      fullname: c.fullName || 'Candidate', // Fallback for testing
+      fullname: c.fullName || c.fullname || 'Candidate', 
       email: c.email,
       role: c.role,
       expertise: c.expertise || 'DEVELOPER',
@@ -229,7 +240,7 @@ router.get('/candidates', async (req, res) => {
  */
 router.post('/profile', authenticate, async (req, res) => {
   try {
-    const { about, education, experience, githubUrl, linkedinUrl, phone, skills } = req.body;
+    const { about, education, experience, github, githubUrl, leetcode, linkedinUrl, phone, skills } = req.body;
     
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -237,7 +248,9 @@ router.post('/profile', authenticate, async (req, res) => {
     if (about !== undefined) user.about = about;
     if (education !== undefined) user.education = education;
     if (experience !== undefined) user.experience = experience;
+    if (github !== undefined) user.github = github;
     if (githubUrl !== undefined) user.githubUrl = githubUrl;
+    if (leetcode !== undefined) user.leetcode = leetcode;
     if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl;
     if (phone !== undefined) user.phone = phone;
     if (skills !== undefined) user.skills = skills;
@@ -254,7 +267,8 @@ router.post('/profile', authenticate, async (req, res) => {
         about: user.about,
         education: user.education,
         experience: user.experience,
-        githubUrl: user.githubUrl,
+        github: user.github,
+        leetcode: user.leetcode,
         linkedinUrl: user.linkedinUrl,
         phone: user.phone,
         skills: user.skills

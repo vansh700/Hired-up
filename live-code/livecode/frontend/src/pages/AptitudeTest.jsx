@@ -61,11 +61,12 @@ const AptitudeTest = () => {
             try {
                 const userString = localStorage.getItem('hiredUpUser');
                 const user = userString ? JSON.parse(userString) : null;
+                const userId = user?._id || user?.id;
                 
-                if (user && user._id && user._id !== 'undefined') {
-                    console.log('Finalizing test for user:', user._id);
+                if (user && userId && userId !== 'undefined') {
+                    console.log('Finalizing test for user:', userId);
                     await api.post('/aptitude/submit', {
-                        userId: user._id,
+                        userId: userId,
                         topic: topic || 'General',
                         category: questions[0]?.category || 'General',
                         score: Math.round((newCorrect / questions.length) * 100),
@@ -74,6 +75,8 @@ const AptitudeTest = () => {
                         wrongAnswers: newWrong
                     });
                     console.log('Result persisted successfully');
+                } else {
+                    console.warn('No valid user found in localStorage — result not persisted');
                 }
             } catch (err) {
                 console.error('Failed to persist result', err);

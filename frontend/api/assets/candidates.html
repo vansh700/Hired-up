@@ -307,6 +307,15 @@
         <nav class="navbar-minimal">
             <a href="index.html" class="logo">HiredUp</a>
             <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <label style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">Sort by:</label>
+                    <select id="sort-select" onchange="sortAndRender()"
+                        style="background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-main);padding:0.35rem 0.75rem;border-radius:8px;font-size:0.8rem;font-weight:700;font-family:inherit;cursor:pointer;outline:none;">
+                        <option value="score-desc">Score: High to Low</option>
+                        <option value="score-asc">Score: Low to High</option>
+                        <option value="name-asc">Name: A-Z</option>
+                    </select>
+                </div>
                 <button id="nav-theme-toggle" class="btn" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
                     🌙
                 </button>
@@ -385,7 +394,6 @@
 
         async function fetchCandidates() {
             try {
-                // Try localhost first, then 127.0.0.1
                 let res;
                 try {
                     res = await fetch('http://localhost:5000/api/auth/candidates');
@@ -414,10 +422,13 @@
                         experience: c.experience || "Verified Talent",
                         avatar: c.fullname.charAt(0).toUpperCase(),
                         skills: expertiseArr,
-                        scores: scores
+                        scores: scores,
+                        score: baseScore
                     };
                 });
 
+                // Default sort: high score first
+                candidates.sort((a, b) => b.score - a.score);
                 renderCandidates();
             } catch (err) {
                 console.error('Error:', err);
@@ -431,15 +442,29 @@
                 grid.innerHTML = '<div class="card p-20 col-span-3 text-center opacity-50"><h3>NO_DATA_FOUND</h3><p>Starting sector scan... Awaiting new registrations.</p></div>';
                 return;
             }
-            grid.innerHTML = candidates.map((c, index) => `
-            <div class="card fade-in" style="animation-delay: ${index * 0.1}s">
-                <div class="avatar">${c.avatar}</div>
-                <h3 class="name">${c.name}</h3>
-                <span class="primary-skill">${c.skill}</span>
-                <span class="experience">${c.experience}</span>
-                <button class="btn" onclick="openSkillModal(${index})">View Skills</button>
-            </div>
-        `).join('');
+            grid.innerHTML = candidates.map((c, index) => {
+                const scoreColor = c.score >= 75 ? '#10b981' : c.score >= 50 ? '#f59e0b' : '#ef4444';
+                const scoreBg   = c.score >= 75 ? 'rgba(16,185,129,0.1)' : c.score >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)';
+                const rankBadge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                return `
+                <div class="card fade-in" style="animation-delay: ${index * 0.08}s;position:relative;">
+                    <div style="position:absolute;top:1rem;left:1rem;font-size:1rem;">${rankBadge}</div>
+                    <div style="position:absolute;top:0.85rem;right:0.85rem;background:${scoreBg};color:${scoreColor};border:1px solid ${scoreColor}33;padding:0.2rem 0.6rem;border-radius:99px;font-size:0.72rem;font-weight:900;letter-spacing:0.5px;">SCORE ${c.score}</div>
+                    <div class="avatar">${c.avatar}</div>
+                    <h3 class="name">${c.name}</h3>
+                    <span class="primary-skill">${c.skill}</span>
+                    <span class="experience">${c.experience}</span>
+                    <button class="btn" onclick="openSkillModal(${index})">View Skills</button>
+                </div>`;
+            }).join('');
+        }
+
+        function sortAndRender() {
+            const sortVal = document.getElementById('sort-select').value;
+            if (sortVal === 'score-desc') candidates.sort((a, b) => b.score - a.score);
+            else if (sortVal === 'score-asc') candidates.sort((a, b) => a.score - b.score);
+            else if (sortVal === 'name-asc') candidates.sort((a, b) => a.name.localeCompare(b.name));
+            renderCandidates();
         }
 
         // Modal Logic

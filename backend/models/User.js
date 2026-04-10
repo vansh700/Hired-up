@@ -34,7 +34,9 @@ const userSchema = new mongoose.Schema({
   about: { type: String },
   education: { type: String },
   experience: { type: String },
-  githubUrl: { type: String },
+  github: { type: String }, // Unified name
+  githubUrl: { type: String }, // Legacy support
+  leetcode: { type: String }, // New field
   linkedinUrl: { type: String },
   phone: { type: String },
   skills: { type: [String], default: [] },
@@ -47,4 +49,4 @@ userSchema.virtual('id').get(function() {
   return this._id;
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('User', userSchema, 'candidates');
