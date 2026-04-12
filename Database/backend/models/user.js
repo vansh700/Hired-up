@@ -13,9 +13,7 @@ const userSchema = new mongoose.Schema({
   expertise: String,
   phone: String,
   resume: String,
-  certificate: String,
-  companyName: String,
-  designation: String
+certificate: String
 });
 
 module.exports = mongoose.model("User", userSchema, "candidates");

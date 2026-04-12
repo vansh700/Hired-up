@@ -1,0 +1,16 @@
+flask
+flask-cors
+google-generativeai
+PyPDF2
+pdfplumber
+numpy
+pandas
+scikit-learn
+joblib
+python-dotenv
+pytesseract
+opencv-python
+Pillow
+pdf2image
+python-magic
+cryptography

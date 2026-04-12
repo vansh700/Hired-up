@@ -2,7 +2,7 @@
 # This script launches all 5 platform services in separate terminal windows.
 
 Write-Host "🧹 Cleaning up existing processes on ports 5000, 5001, 5002, 8000, 5173..." -ForegroundColor Gray
-$ports = 5000, 5001, 5002, 8000, 5173
+$ports = 5000, 5001, 5002, 5003, 5173
 foreach ($port in $ports) {
     $proc = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique -ErrorAction SilentlyContinue
     if ($proc) { Stop-Process -Id $proc -Force -ErrorAction SilentlyContinue }
@@ -22,9 +22,9 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd live-code/live
 Write-Host "3. Starting Database Middleware (Port 5002)..."
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd Database/backend; node server.js"
 
-# 4. ML Service (Port 8000) - MULTIMODAL VERIFICATION
-Write-Host "4. Starting ML Service (Port 8000)..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd ml-service; python app.py"
+# 4. ML Service (Port 5003) - MULTIMODAL VERIFICATION
+Write-Host "4. Starting ML Service (Port 5003)..."
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd ml-service; `$env:PORT=5003; python app.py"
 
 # 5. LiveCode Frontend (Vite) - CODING LAB
 Write-Host "5. Starting LiveCode Frontend..."

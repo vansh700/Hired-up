@@ -16,6 +16,13 @@ tmp/
 **/*.png
 **/*.jpg
 **/*.jpeg
+# User-added temporary folders
+github_cloned/
+restore_final/
+_github_restore_backup_/
+_old_workspace_backup_/
+exclude_list.txt
+v2_platform/data/
 
 # Python
 __pycache__/
